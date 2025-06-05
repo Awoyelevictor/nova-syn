@@ -5,11 +5,11 @@ import type { SystemLog } from '@/types/nova';
 import { mockSystemLogs, subscribeToMockData } from '@/lib/mockData';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { SectionCard } from '@/components/layout/SectionCard';
-import { ListChecks, MousePointerSquare, Keyboard, Download, Terminal, UserCog } from 'lucide-react';
+import { ListChecks, MousePointerSquareDashed, Keyboard, Download, Terminal, UserCog } from 'lucide-react';
 import { formatDistanceToNow } from 'date-fns';
 
 const iconMap: { [key: string]: React.ElementType } = {
-  cursorMove: MousePointerSquare,
+  cursorMove: MousePointerSquareDashed,
   keypress: Keyboard,
   downloadStart: Download,
   downloadComplete: Download,

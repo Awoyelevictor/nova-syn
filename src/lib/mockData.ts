@@ -1,5 +1,5 @@
 import type { UserProfile, SystemLog, Command, NovaSystemStatus } from '@/types/nova';
-import { UserCheck, UserX, Wifi, WifiOff, MousePointerSquare, Keyboard, Download, Terminal, PlayCircle, CheckCircle2, XCircle, Loader2, AlertTriangle, Activity, Power } from 'lucide-react';
+import { UserCheck, UserX, Wifi, WifiOff, MousePointerSquareDashed, Keyboard, Download, Terminal, PlayCircle, CheckCircle2, XCircle, Loader2, AlertTriangle, Activity, Power } from 'lucide-react';
 
 export const mockUserProfiles: UserProfile[] = [
   {
@@ -35,7 +35,7 @@ export const mockSystemLogs: SystemLog[] = [
     eventType: 'cursorMove', 
     eventData: { x: 120, y: 340 },
     details: "Cursor moved to (120, 340).",
-    icon: MousePointerSquare
+    icon: MousePointerSquareDashed
   },
   { 
     id: 'log3', 
@@ -150,7 +150,7 @@ export function subscribeToMockData<T>(
         eventType: Math.random() > 0.5 ? 'cursorMove' : 'keypress',
         eventData: Math.random() > 0.5 ? { x: Math.floor(Math.random()*1000), y: Math.floor(Math.random()*800)} : { key: String.fromCharCode(97 + Math.floor(Math.random() * 26)) },
         details: Math.random() > 0.5 ? `Cursor moved.` : `Key pressed.`,
-        icon: Math.random() > 0.5 ? MousePointerSquare : Keyboard,
+        icon: Math.random() > 0.5 ? MousePointerSquareDashed : Keyboard,
       };
       (data as SystemLog[]).unshift(newLog);
       if ((data as SystemLog[]).length > 20) (data as SystemLog[]).pop();
