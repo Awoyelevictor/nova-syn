@@ -1,10 +1,11 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { SectionCard } from '@/components/layout/SectionCard';
-import { Lightbulb, Sparkles, Loader2 } from 'lucide-react';
+import { Lightbulb, Sparkles, Loader2, AlertTriangle } from 'lucide-react';
 import { getOnboardingTipsAction } from '@/app/actions/aiActions';
 import type { SystemLog } from '@/types/nova';
 import { mockSystemLogs, subscribeToMockData } from '@/lib/mockData'; // Using mock logs for now
