@@ -6,7 +6,7 @@ import type { UserProfile, NovaSystemStatus } from '@/types/nova';
 import { mockUserProfiles, mockNovaSystemStatus, subscribeToMockData } from '@/lib/mockData';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SectionCard } from '@/components/layout/SectionCard';
-import { Zap, Cpu, MemoryStick, CheckCircle, XCircle, AlertTriangle as SystemAlertTriangle, Clock, Camera } from 'lucide-react'; // Renamed AlertTriangle to avoid conflict
+import { Zap, Cpu, MemoryStick, CheckCircle, XCircle, AlertTriangle as SystemAlertTriangle, Clock, Camera, Info } from 'lucide-react';
 import { useToast } from "@/hooks/use-toast";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
@@ -19,6 +19,7 @@ export function UserPresenceCard() {
   const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const { toast } = useToast();
+  const [systemActionMessage, setSystemActionMessage] = useState<string | null>(null);
 
   useEffect(() => {
     const activeUser = mockUserProfiles.find(u => u.onlineStatus === 'online' && u.faceRecognitionStatus === 'active');
@@ -26,7 +27,7 @@ export function UserPresenceCard() {
 
     const unsubscribeStatus = subscribeToMockData<NovaSystemStatus>('status', (data) => {
       setSystemStatus(data as NovaSystemStatus);
-    }, 3000);
+    });
     
     return () => {
       unsubscribeStatus();
@@ -36,12 +37,16 @@ export function UserPresenceCard() {
   useEffect(() => {
     if (currentUser?.lastSeen) {
       setFormattedLastSeen(new Date(currentUser.lastSeen).toLocaleString());
+    } else {
+      setFormattedLastSeen('Loading...');
     }
   }, [currentUser?.lastSeen]);
 
   useEffect(() => {
     if (systemStatus.lastSync) {
       setFormattedLastSync(new Date(systemStatus.lastSync).toLocaleString());
+    } else {
+      setFormattedLastSync('Loading...');
     }
   }, [systemStatus.lastSync]);
 
@@ -77,7 +82,6 @@ export function UserPresenceCard() {
 
     getCameraPermission();
 
-    // Cleanup function to stop video stream when component unmounts
     return () => {
       if (videoRef.current && videoRef.current.srcObject) {
         const stream = videoRef.current.srcObject as MediaStream;
@@ -85,6 +89,20 @@ export function UserPresenceCard() {
       }
     };
   }, [toast]);
+
+  useEffect(() => {
+    if (currentUser) {
+      if (currentUser.faceRecognitionStatus === 'inactive') {
+        setSystemActionMessage("User not detected. Nova system would prepare to enter sleep mode.");
+      } else if (currentUser.faceRecognitionStatus === 'active') {
+        setSystemActionMessage("User active. System monitoring.");
+      } else {
+        setSystemActionMessage(null); // Clear message for other statuses or if no user
+      }
+    } else {
+      setSystemActionMessage(null);
+    }
+  }, [currentUser, currentUser?.faceRecognitionStatus]);
 
 
   const getStatusColor = (status: UserProfile['onlineStatus'] | UserProfile['faceRecognitionStatus'] | NovaSystemStatus['aiStatus']) => {
@@ -153,7 +171,18 @@ export function UserPresenceCard() {
                 </Alert>
               )}
             </div>
-            <p className="text-xs text-muted-foreground">Last Seen: {formattedLastSeen || 'Loading...'}</p>
+             {systemActionMessage && (
+              <div className="mt-2">
+                <Alert variant="default" className="bg-card-foreground/10 border-border">
+                  <Info className="h-4 w-4 text-accent" />
+                  <AlertTitle className="font-semibold text-sm">System Response</AlertTitle>
+                  <AlertDescription className="text-xs">
+                    {systemActionMessage}
+                  </AlertDescription>
+                </Alert>
+              </div>
+            )}
+            <p className="text-xs text-muted-foreground">Last Seen: {formattedLastSeen}</p>
           </div>
         )}
 
@@ -166,7 +195,7 @@ export function UserPresenceCard() {
             <p className="flex items-center"><Cpu className="h-4 w-4 mr-2 text-accent" /> CPU Usage: {systemStatus.cpuUsage?.toFixed(1) ?? 'N/A'}%</p>
             <p className="flex items-center"><MemoryStick className="h-4 w-4 mr-2 text-accent" /> Memory Usage: {systemStatus.memoryUsage?.toFixed(1) ?? 'N/A'}%</p>
           </div>
-          <p className="text-xs text-muted-foreground">Last Sync: {formattedLastSync || 'Loading...'}</p>
+          <p className="text-xs text-muted-foreground">Last Sync: {formattedLastSync}</p>
         </div>
       </div>
     </SectionCard>
