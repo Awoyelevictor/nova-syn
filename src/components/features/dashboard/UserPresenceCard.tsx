@@ -1,18 +1,24 @@
 
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { UserProfile, NovaSystemStatus } from '@/types/nova';
 import { mockUserProfiles, mockNovaSystemStatus, subscribeToMockData } from '@/lib/mockData';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { SectionCard } from '@/components/layout/SectionCard';
-import { Zap, Cpu, MemoryStick, CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
+import { Zap, Cpu, MemoryStick, CheckCircle, XCircle, AlertTriangle as SystemAlertTriangle, Clock, Camera } from 'lucide-react'; // Renamed AlertTriangle to avoid conflict
+import { useToast } from "@/hooks/use-toast";
+import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 
 export function UserPresenceCard() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [systemStatus, setSystemStatus] = useState<NovaSystemStatus>(mockNovaSystemStatus);
   const [formattedLastSeen, setFormattedLastSeen] = useState<string | null>(null);
   const [formattedLastSync, setFormattedLastSync] = useState<string | null>(null);
+  
+  const [hasCameraPermission, setHasCameraPermission] = useState<boolean | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     const activeUser = mockUserProfiles.find(u => u.onlineStatus === 'online' && u.faceRecognitionStatus === 'active');
@@ -39,6 +45,48 @@ export function UserPresenceCard() {
     }
   }, [systemStatus.lastSync]);
 
+  useEffect(() => {
+    const getCameraPermission = async () => {
+      if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+        console.error('getUserMedia is not supported in this browser.');
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Not Supported',
+          description: 'Your browser does not support camera access or it is disabled.',
+        });
+        return;
+      }
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+        setHasCameraPermission(true);
+
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+        setHasCameraPermission(false);
+        toast({
+          variant: 'destructive',
+          title: 'Camera Access Denied',
+          description: 'Please enable camera permissions in your browser settings to use this app.',
+        });
+      }
+    };
+
+    getCameraPermission();
+
+    // Cleanup function to stop video stream when component unmounts
+    return () => {
+      if (videoRef.current && videoRef.current.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [toast]);
+
+
   const getStatusColor = (status: UserProfile['onlineStatus'] | UserProfile['faceRecognitionStatus'] | NovaSystemStatus['aiStatus']) => {
     switch (status) {
       case 'online':
@@ -57,13 +105,13 @@ export function UserPresenceCard() {
     }
   };
   
-  const getStatusIcon = (status: NovaSystemStatus['aiStatus']) => {
+  const getAISystemStatusIcon = (status: NovaSystemStatus['aiStatus']) => {
     switch (status) {
       case 'online': return <CheckCircle className="h-4 w-4 text-green-400" />;
       case 'offline': return <XCircle className="h-4 w-4 text-gray-400" />;
-      case 'error': return <AlertTriangle className="h-4 w-4 text-red-400" />;
+      case 'error': return <SystemAlertTriangle className="h-4 w-4 text-red-400" />;
       case 'initializing': return <Clock className="h-4 w-4 text-yellow-400" />;
-      default: return <AlertTriangle className="h-4 w-4 text-muted-foreground" />;
+      default: return <SystemAlertTriangle className="h-4 w-4 text-muted-foreground" />;
     }
   }
 
@@ -71,7 +119,7 @@ export function UserPresenceCard() {
     <SectionCard title="System & User Status" icon={Zap} className="col-span-1 md:col-span-2">
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         {currentUser && (
-          <div className="space-y-3 p-4 rounded-lg border border-border">
+          <div className="space-y-4 p-4 rounded-lg border border-border">
             <div className="flex items-center space-x-3">
               <Avatar className="h-16 w-16">
                 <AvatarImage src={currentUser.avatarUrl} alt={currentUser.name} data-ai-hint="profile portrait" />
@@ -89,13 +137,29 @@ export function UserPresenceCard() {
                 </div>
               </div>
             </div>
-             <p className="text-xs text-muted-foreground">Last Seen: {formattedLastSeen || 'Loading...'}</p>
+            
+            <div className="mt-2">
+              <h4 className="text-sm font-medium mb-2 text-foreground flex items-center">
+                <Camera className="h-4 w-4 mr-2 text-accent" /> Live Feed
+              </h4>
+              <video ref={videoRef} className="w-full aspect-[4/3] rounded-md border border-input bg-muted shadow-inner object-cover" autoPlay muted playsInline />
+              {hasCameraPermission === false && (
+                <Alert variant="destructive" className="mt-2">
+                  <SystemAlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Camera Access Denied</AlertTitle>
+                  <AlertDescription>
+                    Please enable camera permissions in your browser settings to display the live video feed.
+                  </AlertDescription>
+                </Alert>
+              )}
+            </div>
+            <p className="text-xs text-muted-foreground">Last Seen: {formattedLastSeen || 'Loading...'}</p>
           </div>
         )}
 
         <div className="space-y-3 p-4 rounded-lg border border-border">
           <div className="flex items-center space-x-2">
-            {getStatusIcon(systemStatus.aiStatus)}
+            {getAISystemStatusIcon(systemStatus.aiStatus)}
             <h4 className="font-semibold text-md">Nova AI: {systemStatus.aiStatus}</h4>
           </div>
           <div className="space-y-1 text-sm">
