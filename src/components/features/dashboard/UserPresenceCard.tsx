@@ -1,20 +1,20 @@
+
 'use client';
 
 import { useState, useEffect } from 'react';
 import type { UserProfile, NovaSystemStatus } from '@/types/nova';
 import { mockUserProfiles, mockNovaSystemStatus, subscribeToMockData } from '@/lib/mockData';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Badge } from '@/components/ui/badge';
 import { SectionCard } from '@/components/layout/SectionCard';
-import { Users, Zap, Cpu, MemoryStick, CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
-import Image from 'next/image';
+import { Zap, Cpu, MemoryStick, CheckCircle, XCircle, AlertTriangle, Clock } from 'lucide-react';
 
 export function UserPresenceCard() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(null);
   const [systemStatus, setSystemStatus] = useState<NovaSystemStatus>(mockNovaSystemStatus);
+  const [formattedLastSeen, setFormattedLastSeen] = useState<string | null>(null);
+  const [formattedLastSync, setFormattedLastSync] = useState<string | null>(null);
 
   useEffect(() => {
-    // In a real app, fetch this from Firebase
     const activeUser = mockUserProfiles.find(u => u.onlineStatus === 'online' && u.faceRecognitionStatus === 'active');
     setCurrentUser(activeUser || mockUserProfiles[0]);
 
@@ -26,6 +26,18 @@ export function UserPresenceCard() {
       unsubscribeStatus();
     };
   }, []);
+
+  useEffect(() => {
+    if (currentUser?.lastSeen) {
+      setFormattedLastSeen(new Date(currentUser.lastSeen).toLocaleString());
+    }
+  }, [currentUser?.lastSeen]);
+
+  useEffect(() => {
+    if (systemStatus.lastSync) {
+      setFormattedLastSync(new Date(systemStatus.lastSync).toLocaleString());
+    }
+  }, [systemStatus.lastSync]);
 
   const getStatusColor = (status: UserProfile['onlineStatus'] | UserProfile['faceRecognitionStatus'] | NovaSystemStatus['aiStatus']) => {
     switch (status) {
@@ -77,7 +89,7 @@ export function UserPresenceCard() {
                 </div>
               </div>
             </div>
-             <p className="text-xs text-muted-foreground">Last Seen: {new Date(currentUser.lastSeen).toLocaleString()}</p>
+             <p className="text-xs text-muted-foreground">Last Seen: {formattedLastSeen || 'Loading...'}</p>
           </div>
         )}
 
@@ -90,7 +102,7 @@ export function UserPresenceCard() {
             <p className="flex items-center"><Cpu className="h-4 w-4 mr-2 text-accent" /> CPU Usage: {systemStatus.cpuUsage?.toFixed(1) ?? 'N/A'}%</p>
             <p className="flex items-center"><MemoryStick className="h-4 w-4 mr-2 text-accent" /> Memory Usage: {systemStatus.memoryUsage?.toFixed(1) ?? 'N/A'}%</p>
           </div>
-          <p className="text-xs text-muted-foreground">Last Sync: {new Date(systemStatus.lastSync).toLocaleString()}</p>
+          <p className="text-xs text-muted-foreground">Last Sync: {formattedLastSync || 'Loading...'}</p>
         </div>
       </div>
     </SectionCard>
